@@ -23,7 +23,8 @@ export default defineConfig({
         background_color: '#0f1117',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
+        // start_url·scope는 명시하지 않는다 — vite-plugin-pwa가 base(`/Mind-Debugger/`)에서
+        // 자동으로 잡아 둘이 일치하게 한다. (하드코딩하면 scope와 어긋나 설치가 안 됨)
         icons: [
           { src: 'pwa-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512.png', sizes: '512x512', type: 'image/png' },
