@@ -1,0 +1,113 @@
+// 노아의 실제 사례 라이브러리 (배치 1~4, 81건).
+// 행 형식: [hoursAgo, fact, source, intensity, assumptions([[text, tags]]), alternatives, missingInfo, parsed]
+// hoursAgo는 불러오는 시점 기준 상대 시간 — 언제 불러도 24h 체크/대시보드가 살아있게.
+
+const ROWS = [
+  // ── 보스 3 (미파싱) ──
+  [0.2, '하루 종일 매니저 생각, 동료 생각, HQ 생각. 밤에: 나는 왜 발전이 없을까? (Python 공부 0시간 · 프로젝트 0시간 · 타인 분석 4시간)', '노아의 뇌', 9, [], [], [], false],
+  [0.5, '"Hmmm..." — 내 아이디어를 듣고 5초 침묵', '팀장', 10, [], [], [], false],
+  [1, "\"Let's discuss this offline.\"", '팀장', 9, [], [], [], false],
+
+  // ── 배치 4: 자기 대화형 (29) ──
+  [1.2, '발표 예정. 아직 안 함. → 이번 발표 망하면 내 평판 끝날 거야', '발표', 7, [['망하면 평판이 끝난다', ['fortune-telling', 'catastrophizing']]], ['발표는 아직 일어나지 않음 — 증거 0%'], ['지금 통제 가능한 준비는?'], true],
+  [2, '회의 중 저 사람 표정이 안 좋음 → 분명 내 얘기 때문이야', '회의', 6, [['내 얘기 때문에 표정이 안 좋다', ['mind-reading', 'personalization']]], ['컨디션, 다른 업무, 개인 사정일 수 있음 — 빠진 정보: 전부'], [], true],
+  [3, '동료 승진 소식 → 나는 뒤쳐지고 있구나', '커리어', 7, [['나는 뒤쳐지고 있다', ['comparison', 'black-white']]], ['동료의 승진과 내 성장은 독립된 트랙'], ['내 성장 지표는 따로 무엇인가?'], true],
+  [4, '코드 95% 완성 → 아직 멀었네', '코드', 5, [['아직 멀었다', ['perfectionism', 'mental-filter']]], ['95%는 사실상 완성 단계 — 남은 5%만 보고 있음'], [], true],
+  [5, '아기가 욺 → 내가 좋은 아빠가 아닌가?', '집', 6, [['내가 좋은 아빠가 아니다', ['personalization', 'emotional-reasoning']]], ['아기는 원래 운다 — 배고픔, 졸림, 기저귀일 수 있음'], [], true],
+  [6, '고객 질문 하나 옴 → 프로젝트 망했다', '고객', 7, [['프로젝트가 망했다', ['catastrophizing', 'fortune-telling']]], ['질문 하나 = 질문 하나'], ['질문 내용이 실제로 뭔가?'], true],
+  [7, '회의 분위기 이상함 → 내가 분위기 망쳤나?', '회의', 6, [['내가 분위기를 망쳤다', ['personalization', 'mind-reading']]], ['나와 무관한 사정(직전 회의, 다른 이슈)일 수 있음'], [], true],
+  [8, '한 번 실패 → 나는 재능이 없다', '일', 7, [['나는 재능이 없다', ['black-white', 'overgeneralization', 'labeling']]], ['표본 1개로 일반화 불가'], ['반례(성공 사례) 3개는?'], true],
+  [9, '아무도 칭찬 안 함 → 가치 없는 일인가?', '일', 6, [['가치 없는 일이다', ['approval-seeking', 'emotional-reasoning']]], ['피드백 부재 ≠ 부정 평가'], [], true],
+  [10, '내부 이동 안 했음. 결과는 모름 → 그때 갔어야 했는데', '커리어', 6, [['갔으면 더 좋았을 거다', ['fortune-telling', 'rumination']]], ['가지 않은 길의 결과는 알 수 없음 — 검증 불가능한 가정'], [], true],
+  [10.5, '보유 종목 하락 → 난 투자 감각이 없다', '투자', 6, [['나는 투자 감각이 없다', ['labeling', 'overgeneralization']]], ['시장 전체 흐름일 수 있음'], ['같은 기간 지수 대비 성과는?'], true],
+  [11, '하루 공부 못 함 → 또 무너졌네', '공부', 5, [['또 무너졌다', ['overgeneralization', 'black-white']]], ['하루는 하루 — 누적 기록은 별개'], [], true],
+  [11.5, '오늘 집중 안 됨 → 내가 게을러졌나?', '컨디션', 5, [['게을러졌다', ['labeling', 'personalization']]], ['수면 부족, 피로 같은 신체 원인일 수 있음'], ['어젯밤 수면은 어땠나?'], true],
+  [12, '친구가 먼저 연락 안 함 → 관계 끝났네', '친구', 6, [['관계가 끝났다', ['fortune-telling', 'catastrophizing', 'mind-reading']]], ['서로 바쁜 시기일 수 있음 — 내가 먼저 연락해도 됨'], [], true],
+  [12.5, '아내가 피곤해 보임 → 내가 부족해서 그런가?', '집', 6, [['내가 부족해서다', ['personalization']]], ['육아·일 피로 등 나와 무관한 원인일 수 있음'], [], true],
+  [13, '어떤 기술을 모름 → 나는 뒤쳐졌다', '커리어', 6, [['뒤쳐졌다', ['comparison', 'overgeneralization']]], ['모든 기술을 아는 사람은 없음'], [], true],
+  [13.5, '40대 이후 → 이제 늦었다', '인생', 6, [['이제 늦었다', ['fortune-telling', 'black-white']]], ['늦었다는 증거 없음'], [], true],
+  [14, 'JS 개념 하나 이해 안 됨 → 나는 개발 체질이 아닌가?', '공부', 6, [['개발 체질이 아니다', ['overgeneralization', 'labeling']]], ['개념 하나 어려움 ≠ 적성 문제'], [], true],
+  [14.5, 'Dashboard 공유했는데 반응 없음 → 가치 없는 프로젝트', '사이드 프로젝트', 6, [['가치 없는 프로젝트다', ['approval-seeking', 'mental-filter']]], ['노출이 부족했을 수 있음 — 반응 없음 ≠ 부정 평가'], [], true],
+  [15, '지원 후 연락 없음 → 경쟁력 없다', '이직', 6, [['경쟁력이 없다', ['fortune-telling', 'labeling']]], ['채용 프로세스 지연은 흔함'], [], true],
+  [15.5, '눈 피로 → 큰 병인가?', '건강', 5, [['큰 병이다', ['catastrophizing']]], ['화면 사용 증가가 더 그럴듯한 원인'], [], true],
+  [16, '예상치 못한 지출 발생 → 재정 끝났다', '가계', 6, [['재정이 끝났다', ['catastrophizing']]], ['일회성 지출 — 월 단위로 보면 흡수 가능'], [], true],
+  [16.5, '발표에서 질문 많이 받음 → 설명 못했다', '발표', 6, [['설명을 못했다', ['personalization', 'mind-reading']]], ['관심이 많다는 뜻일 수도'], [], true],
+  [17, '발표에서 질문 없음 → 아무도 관심 없음', '발표', 5, [['아무도 관심 없다', ['mind-reading']]], ['명확해서 질문이 없었을 수도'], [], true],
+  [17.5, '오늘 아무것도 못 함 → 나는 원래 이런 사람', '생산성', 6, [['나는 원래 이런 사람이다', ['labeling', 'overgeneralization']]], ['표본은 오늘 하루'], [], true],
+  [18, '아이가 아빠보다 엄마를 찾음 → 나를 안 좋아하나?', '집', 6, [['아이가 나를 안 좋아한다', ['personalization', 'mind-reading']]], ['발달 단계상 자연스러운 시기일 수 있음'], [], true],
+  [18.5, '과거 실수가 떠오름 → 나는 왜 항상 그럴까', '회고', 6, [['나는 항상 그런다', ['overgeneralization', 'rumination']]], ['과거 사건은 이미 종료 — 반복 재생만 남음'], ['반례 3개는?'], true],
+  [19, '남의 GitHub 봄 → 나는 한참 멀었네', 'GitHub', 6, [['나는 한참 멀었다', ['comparison']]], ['타인의 하이라이트 vs 내 전체 과정 — 불공정 비교'], [], true],
+  [19.5, '누군가 AI 잘함 → 난 대체 뭘 했지?', '커리어', 6, [['난 아무것도 안 했다', ['comparison', 'mental-filter']]], ['내 축적은 다른 영역에 있음'], [], true],
+
+  // ── 배치 3: Nightmare Mode (29) ──
+  [20, "\"Let's not overengineer it.\"", '팀장', 9, [['또 개발을 무시하네', ['mind-reading', 'overgeneralization', 'personalization']]], ['과도한 설계에 대한 범위·일정 관리 우려일 수 있음'], ['어느 부분이 과하다고 보는지?'], true],
+  [20.3, 'Slack 메시지 읽음. 답 없음.', '동료', 5, [['무시당했다', ['mind-reading']]], ['나중에 답하려 했을 수 있음'], [], true],
+  [20.6, '"Interesting idea, but..." — 뒷말 아직 안 들음', '동료', 6, [['끝났다', ['fortune-telling', 'mental-filter']]], ['뒤 내용을 아직 모름 — 판정 불가'], [], true],
+  [21, '"Who approved this?"', 'Director', 9, [['좆됐다', ['catastrophizing', 'fortune-telling']]], ['프로세스 확인 질문일 수 있음'], ['승인 절차가 실제로 필요한 사안이었는지?'], true],
+  [21.3, '"Help me understand."', '팀장', 5, [['내가 설명을 못한다는 뜻이다', ['personalization']]], ['협력적인 이해 요청일 수 있음'], [], true],
+  [21.6, '발표 중 누군가 시계를 계속 봄', '회의', 5, [['내 발표가 지루하다', ['mind-reading', 'personalization']]], ['다음 일정이 있을 수 있음'], [], true],
+  [22, '"We noticed some differences."', '고객', 7, [['큰 문제가 발생했다', ['catastrophizing']]], ['단순 차이 확인 요청일 수 있음'], ['어떤 차이를 발견했는지?'], true],
+  [22.3, '"We already have a process."', '동료', 6, [['변화를 싫어한다', ['labeling', 'mind-reading']]], ['거절이 아니라 정보 공유일 수 있음'], ['기존 프로세스가 이 케이스를 커버하는지?'], true],
+  [22.6, '"Can you quantify the benefit?"', '팀장', 6, [['내 아이디어를 무시한다', ['mind-reading']]], ['정당한 ROI 질문 — 데이터로 답 가능'], [], true],
+  [23, '"That\'s one perspective."', '동료', 5, [['틀렸다는 소리다', ['mind-reading', 'black-white']]], ['말 그대로 여러 관점 중 하나라는 뜻일 수 있음'], [], true],
+  [23.3, '"Let\'s revisit this next quarter."', '팀장', 7, [['죽은 프로젝트다', ['fortune-telling']]], ['분기 계획상 보류일 수 있음 — 아직 결정 없음'], ['다음 분기 일정을 지금 잡아둘 수 있는지?'], true],
+  [23.6, '내 발표 후 질문이 엄청 많음', '회의', 7, [['공격받고 있다', ['mind-reading', 'catastrophizing']]], ['질문 많음 = 관심의 표시일 수 있음'], [], true],
+  [24.5, '내 설명 후 아무 질문 없음', '회의', 6, [['아무도 이해 못했다', ['mind-reading', 'catastrophizing']]], ['충분히 명확해서 질문이 없었을 수도 있음'], [], true],
+  [25, '"That\'s not how we usually do it."', '동료', 6, [['내 방법이 틀렸다', ['black-white']]], ['다르다 ≠ 틀리다 — 관행과 다를 뿐'], [], true],
+  [25.5, '"We will think about it."', '고객', 6, [['거절이다', ['fortune-telling']]], ['실제로 검토 중일 수 있음'], ['결정 시점이 언제인지?'], true],
+  [26, 'HQ가 3주째 답 없음', 'HQ', 7, [['무시당하고 있다', ['mind-reading', 'personalization']]], ['우선순위, 휴가, 내부 사정일 수 있음'], ['리마인드를 보냈는가?'], true],
+  [26.5, '"Let\'s hear other opinions." — 내 의견 발표 직후', '팀장', 5, [['내 의견이 별로라는 뜻이다', ['personalization', 'mind-reading']]], ['정상적인 회의 진행일 수 있음'], [], true],
+  [27, '"That\'s ambitious."', '동료', 5, [['비현실적이라는 뜻이다', ['mind-reading']]], ['말 그대로 야심차다는 뜻일 수 있음'], [], true],
+  [27.5, '"You are technically very strong." (잠시 정적)', '성과 리뷰', 6, [['뒤에 칼 꽂는다', ['fortune-telling', 'mental-filter']]], ['그냥 칭찬이고 다음 말을 정리 중이었을 수 있음'], [], true],
+  [28, '팀장이 내 Dashboard를 공유함. 내 이름 없음.', '팀장', 9, [['의도적으로 내 이름을 뺐다', ['mind-reading', 'personalization']]], ['단순 실수일 수 있음'], ['실수인지 의도인지 — 물어보면 끝남'], true],
+  [28.5, '"I didn\'t have time to review it yet."', '동료', 4, [['관심이 없다', ['mind-reading']]], ['말 그대로 시간이 없었을 수 있음'], [], true],
+  [29, '"Let\'s keep this simple."', '팀장', 5, [['내가 복잡하게 만들었다는 비난이다', ['personalization']]], ['범위 관리 의도일 수 있음'], [], true],
+  [29.5, '"Can you provide more evidence?"', 'HQ', 6, [['날 못 믿는다', ['mind-reading']]], ['정상적인 검증 절차일 수 있음'], [], true],
+  [30, '"I am not sure this is the best approach."', '시니어 엔지니어', 6, [['내 분석을 부정한다', ['black-white', 'mind-reading']]], ['확신이 없다는 것이지 부정이 아님'], ['어떤 대안을 생각하고 있는지?'], true],
+  [30.5, '회의 초대: "Alignment Discussion"', '회의', 7, [['정치 시작이다, 공격 준비다', ['catastrophizing', 'fortune-telling', 'mind-reading']]], ['말 그대로 방향을 맞추는 회의일 수 있음'], ['아젠다가 뭔지 미리 물어볼 수 있는지?'], true],
+  [31, '"We have some questions."', '고객', 7, [['망했다', ['catastrophizing', 'fortune-telling']]], ['단순 정보 요청일 수 있음'], ['질문 내용이 뭔지?'], true],
+  [31.5, '"Interesting." — 이것만 말함', '팀장', 6, [['비꼬는 거다', ['mind-reading']]], ['판단할 근거 자체가 없음'], [], true],
+  [32, '회의에서 내 아이디어에 무반응. 2주 뒤 다른 사람이 같은 아이디어 → 모두 호평', '회의', 8, [['내 공을 뺏겼다', ['personalization', 'mind-reading']]], ['사람들이 기억 못했을 수 있음', '타이밍이나 전달 방식의 차이일 수 있음'], [], true],
+  [32.5, '팀장이 내 메일에 답장 안 함. 다른 사람 메일에는 답장함.', '팀장', 7, [['나를 무시한다, 내 프로젝트를 싫어한다', ['mind-reading', 'personalization']]], ['바쁘거나 우선순위 차이일 수 있음 — 증거 1/10'], ['급한 건이면 리마인드 해봤는가?'], true],
+
+  // ── 배치 2 (10) ──
+  [33, '"I expected a bit more progress by now."', '팀장', 7, [['나는 부족하다', ['labeling']], ['또 실망시켰다', ['overgeneralization', 'personalization']]], ['기대치가 뭐였는지 모름', '어떤 기준으로 느리다는 건지 모름'], [], true],
+  [34, '"That\'s one way to do it." — 내 구현 방식에 대한 코멘트', '시니어 엔지니어', 6, [['비꼬는 건가? 내 방식이 별로라는 건가?', ['mind-reading']]], ['말 그대로 여러 방법 중 하나라는 뜻일 수 있음', '칭찬인지 비판인지 판단할 근거 없음'], [], true],
+  [35, '"We\'ll take a look." — 내 이슈 리포트에 대한 답', 'HQ', 5, [['안 하겠다는 소리네', ['fortune-telling', 'mind-reading']]], ['실제로 검토하겠다는 뜻일 수 있음', '일정과 우선순위는 물어보면 알 수 있음'], [], true],
+  [36, '"Thanks." — 메일 끝.', '고객', 5, [['만족인 건가? 불만인 건가? (판단할 정보가 전혀 없는데 추측 중)', ['mind-reading']]], ['빠진 정보: 전부. 해석할 재료 자체가 없음 — 감사 표현이 사실의 전부'], [], true],
+  [37, '"Let\'s revisit this later." — 내 제안에 대한 회의 결론', '팀 회의', 6, [['기각당했다', ['fortune-telling', 'black-white']]], ['정말 나중에 다시 볼 수도 있음', '미루는 건지 아닌지는 후속 일정을 제안해보면 확인됨'], [], true],
+  [38, '"You have strong technical skills." — 추가 피드백 없이 이 말만', '성과 리뷰', 5, [['뒤에 안 좋은 말이 나올 거다', ['fortune-telling', 'mental-filter']]], ['추가 피드백은 없었음 — 그냥 칭찬일 수 있음'], [], true],
+  [39, '"Can you simplify this?"', '팀장', 6, [['복잡하게 만들었다는 비난이다', ['personalization', 'mind-reading']]], ['청중 수준에 맞추려는 요청일 수 있음', '내용 자체가 복잡한 주제일 수 있음'], [], true],
+  [40, '"Interesting project."', '동료', 4, [['관심 없는데 형식적으로 말하는 거다', ['mind-reading']]], ['진짜 관심일 수 있음 — 후속 질문 해보면 확인됨'], [], true],
+  [41, '"You\'ve been busy lately."', '가족', 5, [['내가 가족을 소홀히 했나?', ['personalization']]], ['불만이 아니라 걱정이나 단순 관찰일 수 있음'], [], true],
+  [42, '"Do we really need a new tool for this?" — 내가 만든 새 툴 공유 직후', '팀 회의', 10, [['또 시작이다', ['overgeneralization']], ['변화 싫어하네', ['labeling', 'mind-reading']], ['내 노력을 무시하네', ['mind-reading', 'personalization']]], ['필요성에 대한 정당한 질문일 수 있음 — 비용, 유지보수, ROI, 기존 솔루션 한계는 실제로 답해야 할 항목', '감정이 아니라 데이터로 답할 수 있는 질문'], [], true],
+
+  // ── 배치 1 (10) — 가장 오래됨: 24h 체크 대상 ──
+  [49, '"Why don\'t we just use the existing code?" — 내가 새로 만든 코드에 대한 리뷰 중', '코드 리뷰', 9, [['내가 괜히 새로 만들었나? 시간 낭비했나?', ['personalization', 'catastrophizing']], ['내 코딩을 무시하네', ['mind-reading']]], ['기존 코드가 실제로 요구사항을 충족하는지 미확인', '비용 비교 없이 나온 가벼운 제안일 수 있음', '구현 난이도를 모르고 한 말일 수 있음'], [], true],
+  [50, '"You seem stressed lately."', '지인', 4, [['내가 이상해 보이나? 나를 부정적으로 보나?', ['mind-reading']]], ['비판이 아니라 걱정의 표현일 수 있음'], [], true],
+  [51, '"We already have a tool for that." — 내 툴 아이디어 제안에 대한 반응', '팀원', 6, [['내 아이디어를 무시한다', ['mind-reading']], ['변화를 싫어하는 사람이다', ['labeling']]], ['기존 툴이 정말 충분한지는 아직 미확인', '거절이 아니라 정보 공유일 수 있음'], [], true],
+  [52, '"Your technical contributions are strong, but visibility could be improved."', '승진 사이클 피드백', 7, [['인정 안 해주네', ['mental-filter']], ['정치질 하라는 건가', ['mind-reading']]], ['기술 기여는 명시적으로 인정받음', '발표/문서화/스테이크홀더 커뮤니케이션 등 구체적 개선 영역 제시일 수 있음'], [], true],
+  [53, '"Interesting." — 내 발표 직후 반응', '회의', 6, [['비꼬는 건가?', ['mind-reading', 'mental-filter']]], ['말 그대로 흥미롭다는 뜻일 수 있음', '긍정인지 부정인지 판단할 근거 자체가 없음'], [], true],
+  [54, '"Can you walk me through what exactly you are doing?"', '팀장', 7, [['나를 감시한다, 못 믿는다', ['mind-reading']]], ['검증이 아니라 본인 이해가 부족해서 설명이 필요한 것일 수 있음'], [], true],
+  [73, '"Can we review the results once more before proceeding?"', '고객', 6, [['고객이 날 못 믿는다', ['mind-reading']]], ['품질 우려가 아니라 관례적인 확인 절차일 수 있음'], [], true],
+  [76, '"I would probably do it differently."', '동료', 5, [['내가 잘못했다, 비판받았다', ['personalization', 'black-white']]], ['다른 접근법이 있다는 말일 뿐, 현재 방식이 틀렸다고 한 적 없음'], [], true],
+  [97, '"We are not convinced the issue is related to the platform upgrade." — 내 분석 보고에 대한 답', 'HQ Engineer', 7, [['내 분석을 무시하네', ['mind-reading']], ['내가 틀렸다고 하는 건가', ['black-white']]], ['반박이 아니라 추가 데이터 요청일 수 있음', '아직 증거가 부족하다는 판단일 뿐'], [], true],
+  [99, '"Looks good overall. I still have some concerns about the methodology." — 보고서 리뷰', '팀장', 6, [['또 나를 못 믿는구나', ['mind-reading', 'overgeneralization']], ['내가 다 했는데 또 태클이네', ['mental-filter', 'personalization']]], ['전체적으로 좋다는 평가가 먼저 나왔음', '어떤 부분이 문제인지 아직 모름 — 구체적 지적이 아닐 수 있음'], [], true],
+]
+
+export function buildSeedEntries(now = Date.now()) {
+  const H = 3600 * 1000
+  return ROWS.map(([hoursAgo, fact, source, intensity, assumptions, alternatives, missingInfo, parsed]) => ({
+    id: crypto.randomUUID(),
+    createdAt: new Date(now - hoursAgo * H).toISOString(),
+    fact,
+    source,
+    intensity,
+    assumptions: assumptions.map(([text, tags]) => ({ id: crypto.randomUUID(), text, tags })),
+    alternatives,
+    missingInfo,
+    action: null,
+    parsedAt: parsed ? new Date(now - hoursAgo * H + 0.3 * H).toISOString() : null,
+    recheck: null,
+  }))
+}
