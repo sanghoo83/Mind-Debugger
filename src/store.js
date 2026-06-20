@@ -49,6 +49,13 @@ export function useEntries() {
     setEntries(prev => prev.map(e => (e.id === id ? { ...e, hurt } : e)))
   }
 
+  // 파서 분해에 대한 사용자 확인(맞아/아니야) — 입력→정답 라벨. 향후 LLM 학습의 연료.
+  const setParseFeedback = (id, data) => {
+    setEntries(prev => prev.map(e =>
+      e.id === id ? { ...e, parseFeedback: { ...data, at: new Date().toISOString() } } : e
+    ))
+  }
+
   const saveRecheck = (id, stillImportant) => {
     setEntries(prev => prev.map(e =>
       e.id === id
@@ -76,7 +83,7 @@ export function useEntries() {
     ))
   }
 
-  return { entries, addCapture, saveParse, setHurt, saveRecheck, toggleActionDone, deleteEntry, importEntries }
+  return { entries, addCapture, saveParse, setHurt, setParseFeedback, saveRecheck, toggleActionDone, deleteEntry, importEntries }
 }
 
 // 전체 데이터(JSON) 내보내기 — 파일 다운로드.

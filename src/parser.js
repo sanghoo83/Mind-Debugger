@@ -306,6 +306,78 @@ export function ruleById(id) {
   return RULES.find(r => r.id === id)
 }
 
+// ── 분해 엔진(Mind Parser 핵심) ──
+// 입력 한 줄을 [관찰된 사실] vs [네가 더한 해석]으로 가른다.
+// 한국어 마커 기반. 완벽하진 않으므로 "신뢰도"를 함께 내보내, 깨끗하게 못 가르면
+// UI가 대안 해석 쪽으로 갈아타도록 한다(대안 = 분해의 안전망).
+
+// 관찰 신호: 외부에서 검증 가능한 사건 (남이/세상이 무엇을 했다)
+const OBSERVE_RE = /(말했|말함|얘기했|했다|했음|안\s?했|못\s?받|없었|없다|물었|물어봤|보냈|답장|읽씹|읽었|공유했|왔다|왔음|봤다|봤음|들었|줬다|적었|썼다|초대|메일|문자|카톡|슬랙|회의|침묵)/
+
+// 추측 신호: 마음·동기·미래를 단정하는 절 (관찰이 아니라 추론)
+const INTERP_MARKERS = [
+  { re: /(무시|싫어|미워|못\s?믿|의심|감시|비꼬|우습게|호구|깔보|관심\s?없)/, kind: 'mind-reading' },
+  { re: /(의도적|일부러|날\s?향|나\s?때문|내\s?탓|왜\s?나만|나\s?혼자)/, kind: 'personalization' },
+  { re: /(끝났|망했|늦었|큰일|좆됐|안\s?될|못\s?할|거야|거다|것이다|할\s?거|죽었|글렀)/, kind: 'fortune-telling' },
+  { re: /(정치|공격|당한다|당할|음모|뒤통수|찍혔|찍힌|밉보|뒷담|버림받|손절|시작이[다야])/, kind: 'catastrophizing' },
+  { re: /(항상|언제나|맨날|매번|원래|평생|하나도|전혀|또다시|또\s)/, kind: 'overgeneralization' },
+  { re: /(분명|틀림없|확실히|뻔|봐도|100%)/, kind: 'certainty' },
+  { re: /(나는?\s?(부족|무능|안\s?돼|재능\s?없|쓸모|별로|이상|모자)|나\s?같은|내가\s?잘못)/, kind: 'labeling' },
+]
+const QUOTE_RE = /["“”'']([^"“”'']{1,})["“”'']/
+
+// 절 단위로 쪼갠다: 화살표·접속·종결·줄바꿈 기준.
+function splitClauses(text) {
+  return text
+    .split(/→|->|\n+|(?<=[.!?…])\s+|\s*(?:그래서|그러니까|그니까|때문에|그래도|근데|분명히?)\s+/)
+    .map(s => s.replace(/[.!?…]+$/, '').trim()) // 절 끝 문장부호 제거(합칠 때 겹침 방지)
+    .filter(Boolean)
+}
+
+export function decompose(text) {
+  const clauses = splitClauses(text)
+  const facts = []
+  const interps = []
+  const kinds = new Set()
+  let obsWeight = 0
+  let interpWeight = 0
+
+  for (const c of clauses) {
+    const hasQuote = QUOTE_RE.test(c)
+    let obs = (hasQuote ? 2 : 0) + (OBSERVE_RE.test(c) ? 1 : 0)
+    let intp = 0
+    for (const m of INTERP_MARKERS) {
+      if (m.re.test(c)) { intp += 1; kinds.add(m.kind) }
+    }
+    obsWeight += obs
+    interpWeight += intp
+    if (intp > obs) interps.push(c)
+    else if (obs > 0) facts.push(c)
+    else facts.push(c) // 마커 없는 절은 일단 사실 쪽(중립)
+  }
+
+  // 추측 비율은 절(clause) 수 기반 — 마커 가중치보다 직관적이고 안정적.
+  const totalClauses = facts.length + interps.length
+  const storyPct = totalClauses > 0 ? Math.round((interps.length / totalClauses) * 100) : null
+
+  // 신뢰도/유형 판정
+  let confidence
+  if (obsWeight === 0 && interpWeight === 0) confidence = 'vague'   // 마커 0개 → 대안 주도
+  else if (facts.length > 0 && interps.length > 0) confidence = 'clean'  // 둘 다 → 분해 주도
+  else if (interps.length > 0) confidence = 'allStory'             // 결론만 적음
+  else confidence = 'allFact'                                       // 깨끗한 사실
+
+  return {
+    factText: facts.join('. '),
+    interpText: interps.join('. '),
+    storyPct,
+    confidence,
+    kinds: [...kinds],
+    hasFact: obsWeight > 0,
+    hasInterp: interpWeight > 0,
+  }
+}
+
 // fact에 매칭되는 최우선 룰 + 같은 룰에 걸린 과거 기록 통계를 반환한다.
 export function suggest(fact, entries, currentId) {
   const rule = RULES.find(r => r.test(fact))

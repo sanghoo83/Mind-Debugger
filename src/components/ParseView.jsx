@@ -5,6 +5,7 @@ import { suggest, debugReport, estimateEvidence } from '../parser.js'
 import { hurtById } from '../emotions.js'
 import { useI18n } from '../i18n.jsx'
 import RecoveryFlow from './RecoveryFlow.jsx'
+import InstantParse from './InstantParse.jsx'
 
 const HOT_THRESHOLD = 7 // 이 강도 이상이면 분석 전에 마음 먼저(Recovery)를 거친다.
 
@@ -139,6 +140,8 @@ function ParseEditor({ entry, store, profile, onDone }) {
   const [report, setReport] = useState(null)
   // 뜨거운 캡처는 공감 단계를 먼저 통과한다. 식은 캡처는 바로 분석.
   const [recovered, setRecovered] = useState(entry.intensity < HOT_THRESHOLD)
+  // 기본 = 즉시 분해(InstantParse). 'manual' = 직접 뜯어보는 깊은 폼.
+  const [mode, setMode] = useState('instant')
 
   const liveEstimate = estimateEvidence({
     assumptions: assumptions.filter(a => a.text.trim()),
@@ -214,6 +217,17 @@ function ParseEditor({ entry, store, profile, onDone }) {
         profile={profile}
         onAnalyze={() => setRecovered(true)}
         onClose={onDone}
+      />
+    )
+  }
+
+  if (mode === 'instant' && !report) {
+    return (
+      <InstantParse
+        entry={entry}
+        store={store}
+        onManual={() => setMode('manual')}
+        onDone={onDone}
       />
     )
   }

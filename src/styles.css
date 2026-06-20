@@ -644,6 +644,117 @@ button { font-family: inherit; }
   font-weight: 300;
 }
 
+/* ---- instant parse (Mind Parser 핵심) ---- */
+.parse-card { padding: 22px 20px; }
+
+/* 펀치: 격앙된 좁은 시야를 붙잡는 큰 단어 */
+.punch { margin-bottom: 18px; }
+.punch-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.punch-num {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--danger);
+  letter-spacing: -0.5px;
+  font-family: var(--mono);
+}
+.punch-fact { font-size: 14px; color: var(--text-dim); font-family: var(--mono); }
+.ratio-bar {
+  height: 14px;
+  background: var(--surface-2);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.ratio-fill {
+  height: 100%;
+  background: var(--danger);
+  border-radius: 7px;
+  transition: width 0.4s ease;
+}
+.punch.soft, .punch.ok {
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  padding: 8px 0 4px;
+}
+.punch.soft { color: var(--warn); }
+.punch.ok { color: var(--ok); }
+
+.parse-input {
+  font-size: 13px;
+  color: var(--text-dim);
+  border-left: 2px solid var(--border);
+  padding-left: 10px;
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+.parse-fact, .parse-interp p { font-size: 15px; line-height: 1.6; margin: 0 0 6px; }
+.pin {
+  display: inline;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-right: 6px;
+}
+.pin.warn { color: var(--warn); }
+.parse-interp { margin-bottom: 10px; }
+.parse-kinds {
+  font-size: 13px;
+  color: var(--warn);
+  margin: 2px 0 0;
+  padding-left: 4px;
+}
+.allstory-hint { margin: 6px 0 14px; }
+
+.parse-alts {
+  border-radius: 10px;
+  background: var(--surface-2);
+  padding: 12px 14px;
+  margin: 14px 0;
+}
+.parse-alts.lead {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+}
+.alts-label { display: block; font-size: 13px; color: var(--accent); margin-bottom: 6px; }
+.parse-alts ul { margin: 0; padding-left: 18px; }
+.parse-alts li { font-size: 14px; line-height: 1.7; }
+
+.parse-feedback {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 16px 0 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.fb-q { font-size: 13px; color: var(--text-dim); margin-right: 2px; }
+.fb-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.fb-btn.on { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+.parse-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+  margin-top: 8px;
+}
+.parse-actions .link { text-align: center; }
+.parse-meta { display: flex; margin-top: 14px; justify-content: center; opacity: 0.7; }
+
 /* ---- debug report ---- */
 .report-card {
   font-family: var(--mono);
