@@ -384,6 +384,58 @@ export function decompose(text) {
   }
 }
 
+// ── 리프레임 라이브러리 매칭 ──
+// 입력을 노아 전용 리프레임 500개와 대조해, 노아 본인의 균형 잡힌 해석을 띄운다.
+// 정밀도 우선: 틀린 리프레임을 띄우느니 안 띄운다.
+import { REFRAMES } from './reframes.js'
+
+const normTxt = s => (s || '').replace(/["“”''.,!?]/g, '').toLowerCase()
+const tokenize = s => normTxt(s).split(/\s+/).filter(w => w.length >= 2)
+const bigrams = s => {
+  const t = normTxt(s).replace(/\s/g, '')
+  const g = []
+  for (let i = 0; i < t.length - 1; i++) g.push(t.slice(i, i + 2))
+  return g
+}
+
+export function matchReframes(input, limit = 2) {
+  const ni = normTxt(input)
+  if (ni.length < 2) return []
+  const itokens = new Set(tokenize(input))
+  const ibigrams = new Set(bigrams(input))
+
+  const scored = REFRAMES.map(r => {
+    const nt = normTxt(r.trigger)
+    let score = 0
+    // 강한 신호: 트리거(따옴표 제거) 내용이 입력에 통째로 들어있음 (인용 케이스)
+    if (nt.length >= 4 && (ni.includes(nt) || nt.includes(ni))) score += 6
+    // 문자 bigram 비율 — 조사/어미 변형을 넘어 내용 일치를 본다 (한국어 핵심)
+    const tbi = bigrams(r.trigger)
+    if (tbi.length >= 3) {
+      const shared = tbi.filter(b => ibigrams.has(b)).length
+      const ratio = shared / tbi.length
+      if (ratio >= 0.6) score += 6           // 트리거 대부분이 입력에 들어있음
+      else score += shared                    // 부분 겹침
+    }
+    // 토큰 겹침(보조)
+    const rtokens = new Set([...tokenize(r.trigger), ...tokenize(r.misread)])
+    let overlap = 0
+    for (const t of itokens) if (rtokens.has(t)) overlap++
+    score += overlap * 2
+    return { r, score }
+  }).filter(x => x.score >= 6).sort((a, b) => b.score - a.score)
+
+  const seen = new Set()
+  const res = []
+  for (const { r } of scored) {
+    if (seen.has(r.reframe)) continue
+    seen.add(r.reframe)
+    res.push(r)
+    if (res.length >= limit) break
+  }
+  return res
+}
+
 // fact에 매칭되는 최우선 룰 + 같은 룰에 걸린 과거 기록 통계를 반환한다.
 export function suggest(fact, entries, currentId) {
   const rule = RULES.find(r => r.test(fact))

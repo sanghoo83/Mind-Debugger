@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { decompose, suggest } from '../parser.js'
+import { decompose, suggest, matchReframes } from '../parser.js'
 import { distortionById } from '../distortions.js'
 import { formatRelative } from '../store.js'
 import { useI18n } from '../i18n.jsx'
@@ -26,7 +26,12 @@ export default function InstantParse({ entry, store, onManual, onDone }) {
 
   const d = decompose(entry.fact)
   const suggestion = suggest(entry.fact, store.entries, entry.id)
-  const alts = suggestion ? suggestion.rule.alternatives[locale] : t('instant.genericAlts')
+  // 노아 전용 리프레임 라이브러리 우선 — 매칭되면 본인이 정리해둔 해석을 띄운다.
+  const libReframes = matchReframes(entry.fact)
+  const fromLib = libReframes.length > 0
+  const alts = fromLib
+    ? libReframes.map(r => r.reframe)
+    : suggestion ? suggestion.rule.alternatives[locale] : t('instant.genericAlts')
   const leadAlts = d.confidence === 'vague' || d.confidence === 'allStory'
 
   const giveFeedback = (val) => {
@@ -94,7 +99,7 @@ export default function InstantParse({ entry, store, onManual, onDone }) {
 
         {/* 대안 — 항상, vague/allStory면 주연 */}
         <div className={`parse-alts ${leadAlts ? 'lead' : ''}`}>
-          <span className="alts-label">🔄 {t('instant.altsLabel')}</span>
+          <span className="alts-label">🔄 {fromLib ? t('instant.altsLibLabel') : t('instant.altsLabel')}</span>
           <ul>{alts.map(a => <li key={a}>{a}</li>)}</ul>
         </div>
 
