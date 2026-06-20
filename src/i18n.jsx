@@ -82,6 +82,7 @@ export const STRINGS = {
     'instant.fbOff': '아니야',
     'instant.done': '알겠어, 정리됐어',
     'instant.goManual': '✍️ 직접 더 뜯어볼래',
+    'instant.creed': '내 감정은 진짜다. 하지만 내 첫 해석이 항상 사실은 아니다.',
 
     'recovery.name': '노아',
     'recovery.event': '있었던 일',
@@ -284,6 +285,7 @@ export const STRINGS = {
     'instant.fbOff': 'no',
     'instant.done': 'Got it, sorted',
     'instant.goManual': '✍️ Let me dig in myself',
+    'instant.creed': 'My feelings are real. But my first interpretation is not always the fact.',
 
     'recovery.name': 'Noah',
     'recovery.event': 'What happened',

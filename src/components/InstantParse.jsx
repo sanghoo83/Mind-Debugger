@@ -110,6 +110,8 @@ export default function InstantParse({ entry, store, onManual, onDone }) {
           <button className="link" onClick={onManual}>{t('instant.goManual')}</button>
         </div>
 
+        <p className="parse-creed">{t('instant.creed')}</p>
+
         <span className="entry-sub parse-meta">
           {entry.source && <span className="source-chip">{entry.source}</span>}
           {formatRelative(entry.createdAt, t)} · {t('parse.capturedIntensity', { n: entry.intensity })}
