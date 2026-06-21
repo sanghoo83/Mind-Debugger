@@ -1035,6 +1035,7 @@ button { font-family: inherit; }
   height: 100%;
   border-radius: 4px;
 }
+.bar-fill.warm-fill { background: var(--warn); }
 .bar-count {
   font-family: var(--mono);
   color: var(--text-dim);

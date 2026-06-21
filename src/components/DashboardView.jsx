@@ -5,6 +5,19 @@ import { buildSeedEntries } from '../seed.js'
 import { useI18n } from '../i18n.jsx'
 import MindMap from './MindMap.jsx'
 import Sparkline from './Sparkline.jsx'
+import { REFRAMES } from '../reframes.js'
+
+// 감정 시그니처 — 노아가 정리한 500개 상황의 emotion을 집계(정적). 어떤 감정이 가장 자주 올라오는가.
+const EMOTION_SIG = (() => {
+  const counts = {}
+  for (const r of REFRAMES) {
+    for (const e of (r.emotion || '').split(/[,、]/).map(s => s.trim()).filter(Boolean)) {
+      counts[e] = (counts[e] || 0) + 1
+    }
+  }
+  const ranking = Object.entries(counts).sort((a, b) => b[1] - a[1])
+  return { ranking, max: ranking[0]?.[1] || 1 }
+})()
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
@@ -193,6 +206,22 @@ export default function DashboardView({ store }) {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="card">
+        <h2>{t('dash.emotionTitle')}</h2>
+        <p className="help">{t('dash.emotionHelp')}</p>
+        <ul className="bar-list">
+          {EMOTION_SIG.ranking.slice(0, 8).map(([emo, count]) => (
+            <li key={emo}>
+              <span className="bar-label">{emo}</span>
+              <div className="bar-track">
+                <div className="bar-fill warm-fill" style={{ width: `${(count / EMOTION_SIG.max) * 100}%` }} />
+              </div>
+              <span className="bar-count">{count}</span>
+            </li>
+          ))}
+        </ul>
       </section>
 
       {stats.mapBranches.length > 0 && (
