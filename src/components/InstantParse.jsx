@@ -26,11 +26,15 @@ export default function InstantParse({ entry, store, onManual, onDone }) {
 
   const d = decompose(entry.fact)
   const suggestion = suggest(entry.fact, store.entries, entry.id)
-  // 노아 전용 리프레임 라이브러리 우선 — 매칭되면 본인이 정리해둔 해석을 띄운다.
+  // 노아 전용 리프레임 라이브러리 우선 — 매칭되면 본인 해석 + 품위 있는 다음 행동을 띄운다.
   const libReframes = matchReframes(entry.fact)
-  const fromLib = libReframes.length > 0
-  const alts = fromLib
-    ? libReframes.map(r => r.reframe)
+  const topMatch = libReframes[0] || null
+  const libAlts = libReframes.map(r => r.reframe).filter(Boolean)
+  const altsFromLib = libAlts.length > 0
+  const bestAction = topMatch?.best || null
+  const patternEmotion = topMatch?.emotion || null
+  const alts = altsFromLib
+    ? libAlts
     : suggestion ? suggestion.rule.alternatives[locale] : t('instant.genericAlts')
   const leadAlts = d.confidence === 'vague' || d.confidence === 'allStory'
 
@@ -98,10 +102,21 @@ export default function InstantParse({ entry, store, onManual, onDone }) {
         )}
 
         {/* 대안 — 항상, vague/allStory면 주연 */}
+        {patternEmotion && (
+          <p className="pattern-emotion">{t('instant.patternEmotion', { e: patternEmotion })}</p>
+        )}
+
         <div className={`parse-alts ${leadAlts ? 'lead' : ''}`}>
-          <span className="alts-label">🔄 {fromLib ? t('instant.altsLibLabel') : t('instant.altsLabel')}</span>
+          <span className="alts-label">🔄 {altsFromLib ? t('instant.altsLibLabel') : t('instant.altsLabel')}</span>
           <ul>{alts.map(a => <li key={a}>{a}</li>)}</ul>
         </div>
+
+        {bestAction && (
+          <div className="best-action">
+            <span className="best-label">🎯 {t('instant.bestLabel')}</span>
+            <p className="best-text">{bestAction}</p>
+          </div>
+        )}
 
         {/* 피드백 = 라벨 데이터 */}
         <div className="parse-feedback">

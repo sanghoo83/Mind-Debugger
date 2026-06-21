@@ -724,6 +724,33 @@ button { font-family: inherit; }
 .parse-alts ul { margin: 0; padding-left: 18px; }
 .parse-alts li { font-size: 14px; line-height: 1.7; }
 
+.pattern-emotion {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 0 0 10px;
+  padding-left: 4px;
+}
+
+.best-action {
+  margin: 14px 0 4px;
+  border-radius: 10px;
+  background: var(--accent-dim);
+  border-left: 3px solid var(--accent);
+  padding: 12px 14px;
+}
+.best-label {
+  display: block;
+  font-size: 13px;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.best-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
 .parse-feedback {
   display: flex;
   align-items: center;
