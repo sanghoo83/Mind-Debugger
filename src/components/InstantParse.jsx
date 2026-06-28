@@ -37,6 +37,8 @@ export default function InstantParse({ entry, store, onManual, onDone }) {
     ? libAlts
     : suggestion ? suggestion.rule.alternatives[locale] : t('instant.genericAlts')
   const leadAlts = d.confidence === 'vague' || d.confidence === 'allStory'
+  // 깨끗한 사실(해석 없음)엔 일반 대안이 의미 없다 — 대신 "그때 생각은?"으로 문을 연다.
+  const showAlts = altsFromLib || d.confidence !== 'allFact'
 
   const giveFeedback = (val) => {
     setFb(val)
@@ -106,10 +108,20 @@ export default function InstantParse({ entry, store, onManual, onDone }) {
           <p className="pattern-emotion">{t('instant.patternEmotion', { e: patternEmotion })}</p>
         )}
 
-        <div className={`parse-alts ${leadAlts ? 'lead' : ''}`}>
-          <span className="alts-label">🔄 {altsFromLib ? t('instant.altsLibLabel') : t('instant.altsLabel')}</span>
-          <ul>{alts.map(a => <li key={a}>{a}</li>)}</ul>
-        </div>
+        {d.confidence === 'allFact' && (
+          <p className="clean-invite">{t('instant.cleanInvite')}</p>
+        )}
+
+        {showAlts && (
+          <div className={`parse-alts ${leadAlts ? 'lead' : ''}`}>
+            <span className="alts-label">🔄 {altsFromLib ? t('instant.altsLibLabel') : t('instant.altsLabel')}</span>
+            <ul>{alts.map(a => <li key={a}>{a}</li>)}</ul>
+          </div>
+        )}
+
+        {d.confidence === 'vague' && !altsFromLib && (
+          <p className="help vague-guide">{t('instant.vagueGuide')}</p>
+        )}
 
         {bestAction && (
           <div className="best-action">

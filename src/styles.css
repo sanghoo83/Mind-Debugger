@@ -709,6 +709,16 @@ button { font-family: inherit; }
   padding-left: 4px;
 }
 .allstory-hint { margin: 6px 0 14px; }
+.clean-invite {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--accent-dim);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 4px 0 14px;
+}
+.vague-guide { margin: 12px 0 4px; font-style: italic; }
 
 .parse-alts {
   border-radius: 10px;
